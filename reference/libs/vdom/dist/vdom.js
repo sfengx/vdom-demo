@@ -47,11 +47,20 @@ class vdom {
         let sel = vnode.sel;
         let node;
 
-        if (sel !== undefined) {
+        if (sel === undefined) {
+            node = new Text(vnode);
+        } else if (sel !== undefined) {
             node = document.createElement(sel);
             for (let key in vnode.data) {
                 if (vnode.data[key] !== undefined) {
-                    Object.assign(node[key], vnode.data[key])
+                    if (key === 'attrs') { // 设置属性
+                        let valKey;
+                        for (valKey in vnode.data[key]) {
+                            node.setAttribute(valKey, vnode.data[key][valKey]);
+                        }
+                    } else { // 合并class等
+                        Object.assign(node[key], vnode.data[key])
+                    }
                 }
             }
         }
@@ -73,19 +82,22 @@ class vdom {
     static patch(oldVnode, vnode) {
         if (!Utils.isVnode(oldVnode)) { // 真实dom
             console.log('真实dom');
-            vnode.elm = vdom.createElm(vnode);
-            oldVnode.appendChild(vnode.elm);
-            if (vnode.children !== undefined && typeof vnode.children !== 'string') { // 判断是否无子节点
-                if (Array.isArray(vnode.children)) { // 多节点
-                    vnode.children.forEach(node => {
-                        vdom.patch(vnode.elm, node);
-                    });
-                } else { // 单节点
-                    vdom.patch(vnode.elm, vnode.children);
+            if (Utils.isVnode(vnode)) {
+                vnode.elm = vdom.createElm(vnode);
+                oldVnode.appendChild(vnode.elm);
+                if (vnode.children !== undefined && typeof vnode.children !== 'string') { // 判断是否无子节点
+                    if (Array.isArray(vnode.children)) { // 多节点
+                        vnode.children.forEach(node => {
+                            vdom.patch(vnode.elm, node);
+                        });
+                    } else { // 单节点
+                        vdom.patch(vnode.elm, vnode.children);
+                    }
                 }
+            } else if (typeof vnode === 'string') {
+                oldVnode.appendChild(vdom.createElm(vnode));
             }
         } else { // 比较差异并更新
-
         }
     }
 }

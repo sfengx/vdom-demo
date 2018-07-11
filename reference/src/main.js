@@ -34,6 +34,9 @@ let node = vdom.vnode('div', {
     width: '100px',
     textAlign: 'center',
     backgroundColor: '#f00'
+  },
+  attrs: {
+    a: '1'
   }
 }, vdom.vnode('p', {
   style: {
@@ -52,7 +55,8 @@ let node = vdom.vnode('div', {
     style: {
       color: '#0f0'
     }
-  }, ' world')
+  }, ' world'),
+  '!'
 ]));
 
 var container = document.getElementById('container');
