@@ -26,40 +26,71 @@
 // console.log(document.body.childNodes);
 
 import vdom from '../libs/vdom/dist/vdom.js';
-console.log(vdom);
+console.log('vdom: ', vdom);
 
-let node = vdom.vnode('div', {
-  style: {
-    display: 'table-cell',
-    width: '100px',
-    textAlign: 'center',
-    backgroundColor: '#f00'
-  },
-  attrs: {
-    a: '1'
+// 渲染函数，生成vnode
+function renderNode(w) {
+  let vnode, vp, vs, vs2;
+
+  if (w === 100) {
+    vs = vdom.vnode('span', {
+      style: {
+        color: '#0f0'
+      }
+    }, 'hello');
+  } else {
+    vs = vdom.vnode('em', {
+      style: {
+        color: '#0f0'
+      }
+    }, 'world');
   }
-}, vdom.vnode('p', {
-  style: {
-    display: 'inline-block',
-    width: '50%',
-    verticalAlign: 'middle',
-    backgroundColor: '#00f'
-  }
-}, [
-  vdom.vnode('span', {
+
+  vs2 = vdom.vnode('span', {
     style: {
       color: '#0f0'
     }
-  }, 'hello'),
-  vdom.vnode('span', {
+  }, 'world');
+
+  vp = vdom.vnode('p', {
     style: {
-      color: '#0f0'
+      display: 'inline-block',
+      width: '50%',
+      verticalAlign: 'middle',
+      backgroundColor: '#00f'
     }
-  }, ' world'),
-  '!'
-]));
+  }, [
+    vs,
+    w.toString(),
+    vs2
+  ]);
 
-var container = document.getElementById('container');
-vdom.patch(container, node);
+  vnode =  vdom.vnode('div', {
+    style: {
+      display: 'table-cell',
+      width: w + 'px',
+      textAlign: 'center',
+      backgroundColor: '#f00'
+    },
+    attrs: {
+      a: '1'
+    }
+  }, vp);
 
-console.log(node);
+  return vnode;
+}
+
+let container, oldNode, newNode, w;
+
+w = 100;
+container = document.getElementById('container');
+oldNode = renderNode(w);
+vdom.patch(container, oldNode);
+
+setTimeout(_ => {
+  w = 120;
+  newNode = renderNode(w);
+  vdom.patch(oldNode, newNode);
+}, 1000);
+
+// console.log(newNode);
