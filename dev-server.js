@@ -8,15 +8,29 @@ var webpack = require('webpack'),
 
 var compiler = webpack(webpackDevConfig);
 
-app.use(webpackDevMiddleware(compiler, {
+var devMiddleware = webpackDevMiddleware(compiler, {
     // publicPath与webpack.config.js保持一致
     publicPath: webpackDevConfig.output.publicPath,
     noInfo: true,
     stats: {
         colors: true
     }
-}));
-app.use(webpackHotMiddleware(compiler));
+})
+
+var hotMiddleware = webpackHotMiddleware(compiler, {
+  log: () => {}
+});
+
+compiler.plugin('compilation', function (compilation) {
+  compilation.plugin('html-webpack-plugin-after-emit', function (data, cb) {
+    hotMiddleware.publish({ action: 'reload' })
+    cb()
+  })
+})
+
+app.use(devMiddleware);
+
+app.use(hotMiddleware);
 
 app.use(express.static('./'));
 

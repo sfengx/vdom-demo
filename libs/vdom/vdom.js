@@ -102,6 +102,8 @@ class vdom {
             oldVnode.isDiffed = true;
         }
 
+        // console.log(vnode);
+
         return currentPatch;
     }
 

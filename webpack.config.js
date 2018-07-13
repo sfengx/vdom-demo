@@ -1,17 +1,19 @@
 const path = require('path');
+const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
 
     mode: 'development',
 
-    entry: './src/main.js',
+    entry:[ 'webpack-hot-middleware/client?noInfo=true&reload=true', './src/main.js'],
 
     output: {
         path: path.resolve(__dirname, './dist'),
 
         filename: 'app.js',
 
-        publicPath: '/assets/',
+        publicPath: '/',
 
         library: 'libs'
     },
@@ -23,6 +25,16 @@ module.exports = {
             loader: 'babel-loader',
             exclude: /node_modules/
         }]
-    }
+    },
+
+    plugins: [
+        new webpack.HotModuleReplacementPlugin(),
+        new HtmlWebpackPlugin({
+            chunks: {},
+            filename: 'index.html',
+            template: 'index.html',
+            inject: true
+        })
+    ]
 
 }
