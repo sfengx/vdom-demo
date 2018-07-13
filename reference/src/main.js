@@ -35,7 +35,7 @@ function renderNode(w) {
   if (w === 100) {
     vs = vdom.vnode('span', {
       style: {
-        color: '#0f0'
+        color: '#ccc'
       }
     }, 'hello');
   } else {
