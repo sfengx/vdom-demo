@@ -27,6 +27,10 @@ class vdom {
             }
             key = data.key ? data.key : undefined;
         }
+        // 转换children为数组类型
+        if (!Array.isArray(children) && children !== undefined) {
+            children = [children];
+        }
         return {
             sel,
             data,
@@ -35,6 +39,21 @@ class vdom {
             elm,
             key: key
         }
+    }
+
+    // 生成真实dom
+    static createElm(vnode) {
+        let sel = vnode.sel;
+        let dom;
+
+        if (sel === undefined) {
+            dom = document.createTextNode(vnode);
+        } else if (sel !== undefined) {
+            dom = document.createElement(sel);
+            vdom.updateElm(vnode, dom);
+        }
+
+        return dom;
     }
 
     // 更新真实dom
@@ -54,42 +73,31 @@ class vdom {
         }
     }
 
-    // 生成真实dom
-    static createElm(vnode) {
-        let sel = vnode.sel;
-        let dom;
-
-        if (sel === undefined) {
-            dom = document.createTextNode(vnode);
-        } else if (sel !== undefined) {
-            dom = document.createElement(sel);
-            vdom.updateElm(vnode, dom);
-        }
-
-        // 文字节点
-        if (vnode.children !== undefined && typeof vnode.children === 'string') {
-            dom.innerText = vnode.children;
-        }
-
-        return dom;
-    }
-
     // 比较并更新虚拟node
     static diff(oldVnode, vnode, parentElm = undefined) {
+        // console.log(oldVnode.sel, vnode.sel);
         let currentPatch = [];
-        if (Utils.equalObject(oldVnode.data, vnode.data, true) && oldVnode.sel === vnode.sel) {
-            console.log('完全相同');
-            return currentPatch;
-        }
+
         if (oldVnode === undefined) {
             vdom.commit(currentPatch, 1, vnode, undefined, parentElm);
-        } else if (oldVnode.sel === vnode.sel) { // 相同类型节点
-            console.log('相同类型', vnode.sel, oldVnode.data, vnode.data);
-            vdom.commit(currentPatch, 2, vnode, oldVnode.elm);
-        } else if (oldVnode.sel !== vnode.sel){ // 不同类型节点
-            console.log('不同类型', vnode.sel);
+        } else if (oldVnode.sel === vnode.sel) {
+            // 相同类型节点
+            if (!Utils.equalObject(oldVnode.data, vnode.data, true)) {
+                console.log('相同类型，不同属性', vnode.sel, oldVnode.data, vnode.data);
+                vdom.commit(currentPatch, 2, vnode, oldVnode.elm);
+            }
+            if (vnode.children && vnode.children.length) {
+                // 有子节点
+                let diffChildrenQueue = [];
+                diffChildrenQueue = vdom.diffChildren(oldVnode.children, vnode.children, oldVnode.elm);
+                currentPatch = currentPatch.concat(diffChildrenQueue);
+            }
+        } else if (oldVnode.sel !== vnode.sel){
+            // 不同类型节点
+            console.log('不同类型', vnode.sel, oldVnode.sel);
             vdom.commit(currentPatch, 1, vnode, undefined, parentElm);
         }
+
         return currentPatch;
     }
 
@@ -98,18 +106,8 @@ class vdom {
         let currentPatch = [];
 
         newChildren.forEach((vnode, key) => {
-            let oldVnode = oldChildren[key];
-            let newPatch = vdom.diff(oldVnode, vnode, parentElm);
+            let newPatch = vdom.diff(oldChildren[key], vnode, parentElm);
             currentPatch = currentPatch.concat(newPatch);
-            if (vnode.children !== undefined && typeof vnode.children !== 'string') {
-                let diffChildrenQueue = [];
-                if (Array.isArray(vnode.children)) {
-                    diffChildrenQueue = vdom.diffChildren(oldVnode.children, vnode.children, oldVnode.elm);
-                } else {
-                    diffChildrenQueue = vdom.diffChildren([oldVnode.children], [vnode.children], oldVnode.elm);
-                }
-                currentPatch = currentPatch.concat(diffChildrenQueue);
-            }
         });
 
         oldChildren.forEach((vnode, key) => {
@@ -121,38 +119,46 @@ class vdom {
         return currentPatch;
     }
 
-    /* 提交更改记录
-     * type {string} 1:新增 2:更新 3:移动 4:删除
-     *
-     */
-    static commit(address, type, vnode, oldElm = undefined, oldParentElm = undefined) {
-        address.push({ type, vnode, oldElm, oldParentElm});
-    }
-
     // 遍历
     static walk(oldVnode, vnode, patch, index) {
-
+        let diffQueue = [];
+        diffQueue = vdom.diff(oldVnode, vnode);
+        console.warn(diffQueue.length + '个提交', diffQueue);
+        return diffQueue;
     }
 
-    // 更新
-    static updateDom(queue) {
+    /*
+     * 提交更改记录
+     * @param {array} queue 更新队列
+     * @param {string} type 1:新增 2:更新 3:移动 4:删除
+     * @param {vnode} vnode 虚拟node
+     * @param {dom} oldElm 旧节点
+     * @param {dom} oldParentElm 旧父节点
+     * @return void
+     */
+    static commit(queue, type, vnode, oldElm = undefined, oldParentElm = undefined) {
+        queue.push({ type, vnode, oldElm, oldParentElm});
+    }
+
+    /*
+     * 合并更改
+     * @param {array} queue 队列
+     * @return void
+     */
+    static merge(queue) {
         queue.forEach((record) => {
             if (record.type === 2) { // 更新
                 console.log('update');
                 vdom.updateElm(record.vnode, record.oldElm);
             } else if (record.type === 1) { // 新增
                 console.log('add');
-                record.oldParentElm.appendChild(vdom.createElm(record.vnode));
-            } else if (record.type === 4) {
+                vdom.patch(record.oldParentElm, record.vnode);
+                // record.oldParentElm.appendChild(vdom.createElm(record.vnode));
+            } else if (record.type === 4) { // 删除
                 console.log('del', record.oldElm);
                 record.oldParentElm.removeChild(record.oldElm);
             }
         });
-    }
-
-    // 更新子节点
-    static updateChildren(parentElm, oldCh, newCh) {
-
     }
 
     // 比较并更新dom
@@ -161,33 +167,21 @@ class vdom {
             if (Utils.isVnode(vnode)) {
                 vnode.elm = vdom.createElm(vnode);
                 oldVnode.appendChild(vnode.elm);
-                if (vnode.children !== undefined && typeof vnode.children !== 'string') { // 判断是否无子节点
-                    if (Array.isArray(vnode.children)) { // 多节点
-                        vnode.children.forEach(node => {
-                            vdom.patch(vnode.elm, node);
-                        });
-                    } else { // 单节点
-                        vdom.patch(vnode.elm, vnode.children);
-                    }
+                if (vnode.children !== undefined) {
+                    // 判断是否无子节点
+                    vnode.children.forEach(node => {
+                        vdom.patch(vnode.elm, node);
+                    });
                 }
             } else if (typeof vnode === 'string') {
-                console.warn(oldVnode);
+                // console.warn(vnode);
                 oldVnode.appendChild(vdom.createElm(vnode));
             }
-        } else { // 比较差异并更新
-            let diffQueue = [], diffChildrenQueue = [];
-            diffQueue = vdom.diff(oldVnode, vnode);
-            if (vnode.children !== undefined && typeof vnode.children !== 'string') {
-                if (Array.isArray(vnode.children)) {
-                    diffChildrenQueue = vdom.diffChildren(oldVnode.children, vnode.children, oldVnode.elm);
-                } else {
-                    diffChildrenQueue = vdom.diffChildren([oldVnode.children], [vnode.children], oldVnode.elm);
-                }
-            }
-            console.log('queue1', diffQueue);
-            console.log('queue2', diffChildrenQueue);
-            vdom.updateDom(diffQueue);
-            vdom.updateDom(diffChildrenQueue);
+        } else {
+            // 比较差异并更新
+            let queue = [];
+            queue = vdom.walk(oldVnode, vnode);
+            vdom.merge(queue);
         }
     }
 }
