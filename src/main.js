@@ -46,7 +46,7 @@ function renderNode(w) {
       backgroundColor: '#f00'
     },
     attrs: {
-      a: '1'
+      id: '1'
     }
   }, vp);
 

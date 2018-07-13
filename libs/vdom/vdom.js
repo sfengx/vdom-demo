@@ -78,7 +78,7 @@ class vdom {
     // 比较并更新虚拟node
     static diff(oldVnode, vnode, parentElm = undefined) {
         let currentPatch = [];
-
+        // console.log(oldVnode, vnode);
         if (oldVnode === undefined || oldVnode.sel !== vnode.sel){
             // 不同类型节点
             console.log('不同类型', vnode.sel, oldVnode.sel);
@@ -89,6 +89,9 @@ class vdom {
                 // 相同类型节点
                 console.log('相同类型', vnode.sel, '不同属性');
                 vdom.commit(currentPatch, 2, vnode, oldVnode.elm);
+            } else if (oldVnode !== vnode) {
+                console.log(oldVnode, vnode);
+                vdom.commit(currentPatch, 2, vnode, oldVnode.elm, parentElm);
             }
             if (vnode.children && vnode.children.length) {
                 // 有子节点
@@ -96,6 +99,8 @@ class vdom {
                 diffChildrenQueue = vdom.diffChildren(oldVnode.children, vnode.children, oldVnode.elm);
                 currentPatch = currentPatch.concat(diffChildrenQueue);
             }
+        } else {
+            // console.log(oldVnode, vnode);
         }
 
         if (Utils.isVnode(oldVnode)) {
@@ -156,7 +161,11 @@ class vdom {
         queue.forEach((record) => {
             if (record.type === 2) { // 更新
                 console.log('update');
-                vdom.updateElm(record.vnode, record.oldElm);
+                if (typeof record.vnode === 'string') {
+                    record.oldElm.nodeValue = record.vnode;
+                } else {
+                    vdom.updateElm(record.vnode, record.oldElm);
+                }
             } else if (record.type === 1) { // 新增
                 console.log('add');
                 if (record.oldElm !== undefined) {
