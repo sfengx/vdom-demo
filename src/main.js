@@ -25,7 +25,7 @@
 
 // console.log(document.body.childNodes);
 
-import vdom from '../libs/vdom/dist/vdom.js';
+import vdom from '../libs/vdom/vdom.js';
 console.log('vdom: ', vdom);
 
 // 渲染函数，生成vnode

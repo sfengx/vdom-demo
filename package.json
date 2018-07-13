@@ -9,13 +9,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "snabbdom": "^0.7.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
     "babel-preset-env": "^1.7.0",
     "babel-preset-stage-3": "^6.24.1",
-    "webpack": "^4.15.1"
+    "reload": "^2.3.0",
+    "webpack": "^4.15.1",
+    "express": "^4.16.3",
+    "snabbdom": "^0.7.1",
+    "webpack-dev-middleware": "^3.1.3",
+    "webpack-hot-middleware": "^2.22.2"
   }
 }
