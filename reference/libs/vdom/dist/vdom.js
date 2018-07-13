@@ -61,12 +61,14 @@ class vdom {
         let key;
         for (key in vnode.data) {
             if (vnode.data[key] !== undefined) {
-                if (key === 'attrs') { // 设置属性
+                if (key === 'attrs') {
+                    // 设置属性
                     let valKey;
                     for (valKey in vnode.data[key]) {
                         dom.setAttribute(valKey, vnode.data[key][valKey]);
                     }
-                } else { // 合并class等
+                } else {
+                    // 合并class等
                     Object.assign(dom[key], vnode.data[key])
                 }
             }
@@ -83,9 +85,9 @@ class vdom {
             vdom.commit(currentPatch, 1, vnode, oldVnode.elm || undefined, parentElm);
             vdom.commit(currentPatch, 4, undefined, oldVnode.elm || undefined, parentElm);
         } else if (oldVnode.sel === vnode.sel) {
-            // 相同类型节点
             if (!Utils.equalObject(oldVnode.data, vnode.data, true)) {
-                console.log('相同类型，不同属性', vnode.sel, oldVnode.data, vnode.data);
+                // 相同类型节点
+                console.log('相同类型', vnode.sel, '不同属性');
                 vdom.commit(currentPatch, 2, vnode, oldVnode.elm);
             }
             if (vnode.children && vnode.children.length) {
@@ -119,8 +121,13 @@ class vdom {
     static walk(oldVnode, vnode, patch, index) {
         let diffQueue = [];
 
+        console.group('diff');
         diffQueue = vdom.diff(oldVnode, vnode);
-        console.warn(diffQueue.length + '个提交', diffQueue);
+        console.groupEnd('diff');
+
+        console.group('commit');
+        console.log(diffQueue.length + '个提交：', diffQueue);
+        console.groupEnd('commit');
 
         return diffQueue;
     }
@@ -158,7 +165,7 @@ class vdom {
                     vdom.patch(record.oldParentElm, record.vnode);
                 }
             } else if (record.type === 4) { // 删除
-                console.log('del', record.oldElm);
+                console.log('del');
                 record.oldParentElm.removeChild(record.oldElm);
             }
         });
@@ -166,7 +173,8 @@ class vdom {
 
     // 比较并更新dom
     static patch(oldVnode, vnode, brotherElm = undefined) {
-        if (!Utils.isVnode(oldVnode)) { // 真实dom
+        if (!Utils.isVnode(oldVnode)) {
+            // 真实dom
             if (Utils.isVnode(vnode)) {
                 vnode.elm = vdom.createElm(vnode);
                 if (brotherElm) {
@@ -181,14 +189,17 @@ class vdom {
                     });
                 }
             } else if (typeof vnode === 'string') {
-                // console.warn(vnode);
                 oldVnode.appendChild(vdom.createElm(vnode));
             }
         } else {
             // 比较差异并更新
             let queue = [];
+
             queue = vdom.walk(oldVnode, vnode);
+
+            console.group('merge');
             vdom.merge(queue);
+            console.groupEnd('merge');
         }
     }
 }
