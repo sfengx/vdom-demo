@@ -1,5 +1,8 @@
 const express = require('express');
 
+var config = {
+    port: 8086
+}
 var app = express();
 var webpack = require('webpack'),
     webpackDevMiddleware = require('webpack-dev-middleware'),
@@ -34,6 +37,6 @@ app.use(hotMiddleware);
 
 app.use(express.static('./'));
 
-app.listen(8080, function () {
-    console.log('App (dev) is now running on port 8080!');
+app.listen(config.port, function () {
+    console.log(`App (dev) is now running on port ${config.port}!`);
 });

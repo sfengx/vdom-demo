@@ -15,6 +15,10 @@ class vdom {
     // 创建虚拟node
     static vnode(sel = undefined, data = undefined, children = undefined, text = undefined, elm = undefined) {
         let key;
+        if (typeof sel === 'string') {
+            sel = '!';
+        }
+
         if (data === undefined) {
             key = undefined;
         } else {
@@ -27,10 +31,16 @@ class vdom {
             }
             key = data.key ? data.key : undefined;
         }
+
+        if (typeof children === 'string') {
+            children = vdom.vnode('!', undefined, undefined, children);
+        }
+
         // 转换children为数组类型
         if (!Array.isArray(children) && children !== undefined) {
             children = [children];
         }
+
         return {
             sel,
             data,
@@ -46,7 +56,7 @@ class vdom {
         let sel = vnode.sel;
         let dom;
 
-        if (sel === undefined) {
+        if (sel === '!' || sel === undefined) {
             dom = document.createTextNode(vnode);
         } else if (sel !== undefined) {
             dom = document.createElement(sel);
@@ -190,7 +200,8 @@ class vdom {
                 vnode.elm = vdom.createElm(vnode);
                 if (brotherElm) {
                     oldVnode.insertBefore(vnode.elm, brotherElm);
-                } else {
+                } else if (oldVnode.sel !== '!'){
+                    console.log(oldVnode);
                     oldVnode.appendChild(vnode.elm);
                 }
                 if (vnode.children !== undefined) {
