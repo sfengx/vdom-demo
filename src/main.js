@@ -38,7 +38,7 @@ function renderNode(w) {
     vs2
   ]);
 
-  vnode =  vdom.vnode('div', {
+  vnode = vdom.vnode('div', {
     style: {
       display: 'table-cell',
       width: w + 'px',
