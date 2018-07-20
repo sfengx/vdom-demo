@@ -15,9 +15,6 @@ class vdom {
     // 创建虚拟node
     static vnode(sel = undefined, data = undefined, children = undefined, text = undefined, elm = undefined) {
         let key;
-        if (typeof sel === 'string') {
-            sel = '!';
-        }
 
         if (data === undefined) {
             key = undefined;
@@ -36,10 +33,19 @@ class vdom {
             children = vdom.vnode('!', undefined, undefined, children);
         }
 
-        // 转换children为数组类型
-        if (!Array.isArray(children) && children !== undefined) {
-            children = [children];
+        if (children !== undefined) {
+            // 转换children为数组类型
+            if (!Array.isArray(children)) {
+                children = [children];
+            }
+            // 遍历children转为vnode
+            children.forEach((vnode, i) => {
+                if (!Utils.isVnode(vnode)) {
+                    children[i] = vdom.vnode('!', undefined, undefined, vnode);
+                }
+            });
         }
+
 
         return {
             sel,
@@ -55,9 +61,12 @@ class vdom {
     static createElm(vnode) {
         let sel = vnode.sel;
         let dom;
+        // console.warn(vnode.sel);
 
-        if (sel === '!' || sel === undefined) {
+        if (sel === undefined) {
             dom = document.createTextNode(vnode);
+        } else if (sel === '!') {
+            dom = document.createTextNode(vnode.text);
         } else if (sel !== undefined) {
             dom = document.createElement(sel);
             vdom.updateElm(vnode, dom);
@@ -69,17 +78,24 @@ class vdom {
     // 更新真实dom
     static updateElm(vnode, dom) {
         let key;
-        for (key in vnode.data) {
-            if (vnode.data[key] !== undefined) {
-                if (key === 'attrs') {
-                    // 设置属性
-                    let valKey;
-                    for (valKey in vnode.data[key]) {
-                        dom.setAttribute(valKey, vnode.data[key][valKey]);
+
+        if (vnode.sel === '!') {
+            // 文字节点
+            dom.nodeValue = vnode.text;
+        } else {
+            // 其他类型节点
+            for (key in vnode.data) {
+                if (vnode.data[key] !== undefined) {
+                    if (key === 'attrs') {
+                        // 设置属性
+                        let valKey;
+                        for (valKey in vnode.data[key]) {
+                            dom.setAttribute(valKey, vnode.data[key][valKey]);
+                        }
+                    } else {
+                        // 合并class等
+                        Object.assign(dom[key], vnode.data[key])
                     }
-                } else {
-                    // 合并class等
-                    Object.assign(dom[key], vnode.data[key])
                 }
             }
         }
@@ -95,13 +111,10 @@ class vdom {
             vdom.commit(currentPatch, 1, vnode, oldVnode.elm || undefined, parentElm);
             vdom.commit(currentPatch, 4, undefined, oldVnode.elm || undefined, parentElm);
         } else if (oldVnode.sel === vnode.sel) {
-            if (!Utils.equalObject(oldVnode.data, vnode.data, true)) {
+            if (!Utils.equalObject(oldVnode.data, vnode.data, true) || oldVnode.text !== vnode.text) {
                 // 相同类型节点
                 console.log('相同类型', vnode.sel, '不同属性');
                 vdom.commit(currentPatch, 2, vnode, oldVnode.elm);
-            } else if (oldVnode !== vnode) {
-                console.log(oldVnode, vnode);
-                vdom.commit(currentPatch, 2, vnode, oldVnode.elm, parentElm);
             }
             if (vnode.children && vnode.children.length) {
                 // 有子节点
@@ -171,11 +184,7 @@ class vdom {
         queue.forEach((record) => {
             if (record.type === 2) { // 更新
                 console.log('update');
-                if (typeof record.vnode === 'string') {
-                    record.oldElm.nodeValue = record.vnode;
-                } else {
-                    vdom.updateElm(record.vnode, record.oldElm);
-                }
+                vdom.updateElm(record.vnode, record.oldElm);
             } else if (record.type === 1) { // 新增
                 console.log('add');
                 if (record.oldElm !== undefined) {
@@ -198,15 +207,17 @@ class vdom {
             // 真实dom
             if (Utils.isVnode(vnode)) {
                 vnode.elm = vdom.createElm(vnode);
+                // console.log(vnode.elm);
                 if (brotherElm) {
                     oldVnode.insertBefore(vnode.elm, brotherElm);
                 } else if (oldVnode.sel !== '!'){
-                    console.log(oldVnode);
+                    // console.log(oldVnode, vnode.elm);
                     oldVnode.appendChild(vnode.elm);
                 }
                 if (vnode.children !== undefined) {
                     // 判断是否无子节点
                     vnode.children.forEach(node => {
+                        // console.error(node);
                         vdom.patch(vnode.elm, node);
                     });
                 }
